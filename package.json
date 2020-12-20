@@ -1,0 +1,26 @@
+{
+  "name": "newman-reporter-pm2",
+  "version": "1.0.0",
+  "description": "newman-reporter that export result into pm2 metric",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voicenter/newman-reporter-pm2.git"
+  },
+  "keywords": [
+    "newman-reporter",
+    "newman",
+    "postman",
+    "pm2",
+    "prtg"
+  ],
+  "author": "Shlomi Gutman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/voicenter/newman-reporter-pm2/issues"
+  },
+  "homepage": "https://github.com/voicenter/newman-reporter-pm2#readme"
+}
