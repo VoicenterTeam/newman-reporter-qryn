@@ -33,9 +33,15 @@ module.exports=  class metrics {
     RequestEventHandler(err, summary){
         //   console.log('RequestEventHandler.summary:', summary);
         let requestID= this.GetObjectID(summary.item.name)
-        this.Set(`Request.${requestID}.responseTime`,summary.response.responseTime)
-        this.Set(`Request.${requestID}.responseCode`,summary.response.code)
-        this.Set(`Request.${requestID}.responseSize`,summary.response.responseSize)
+        if(global.collectionName){
+            this.Set(`Request.${global.collectionName}.${requestID}.responseTime`,summary.response.responseTime)
+            this.Set(`Request.${global.collectionName}.${requestID}.responseCode`,summary.response.code)
+            this.Set(`Request.${global.collectionName}.${requestID}.responseSize`,summary.response.responseSize)
+        } else {
+            this.Set(`Request.${requestID}.responseTime`, summary.response.responseTime)
+            this.Set(`Request.${requestID}.responseCode`, summary.response.code)
+            this.Set(`Request.${requestID}.responseSize`, summary.response.responseSize)
+        }
 
     }
     AssertionEventHandler(err, summary){
@@ -47,7 +53,11 @@ module.exports=  class metrics {
         if(summary.error){
             testStatus= summary.error.message
         }
-        this.Set(`Request.${requestID}.Test.${testID}.Status`,testStatus)
+        if(global.collectionName){
+            this.Set(`Request.${global.collectionName}.${requestID}.Test.${testID}.Status`,testStatus)
+        } else {
+            this.Set(`Request.${requestID}.Test.${testID}.Status`,testStatus)
+        }
     }
     CollectionEventHandler(err, summary){
         // console.log('RequestEventHandler.summary:', summary);
