@@ -62,16 +62,16 @@ module.exports=  class metrics {
     CollectionEventHandler(err, summary){
         // console.log('RequestEventHandler.summary:', summary);
         let collectionName= summary.collection.name
-        this.Set(`Collection.${collectionName}.ResponseAverage`,summary.run.timings.responseAverage)
-        this.Set(`Collection.${collectionName}.ResponseMin`,summary.run.timings.responseMin)
-        this.Set(`Collection.${collectionName}.ResponseMax`,summary.run.timings.responseMax)
-        this.Set(`Collection.${collectionName}.DnsAverage`,summary.run.timings.dnsAverage)
-        this.Set(`Collection.${collectionName}.items.total`,summary.run.stats.items.total)
-        this.Set(`Collection.${collectionName}.items.failed`,summary.run.stats.items.failed)
-        this.Set(`Collection.${collectionName}.RequestsTotal`,summary.run.stats.requests.total)
-        this.Set(`Collection.${collectionName}.RequestsFailed`,summary.run.stats.requests.failed)
-        this.Set(`Collection.${collectionName}.TestsTotal`,summary.run.stats.assertions.total)
-        this.Set(`Collection.${collectionName}.TestsFailed`,summary.run.stats.assertions.failed)
+        this.Set(`[${collectionName}][ResponseAverage]`,summary.run.timings.responseAverage)
+        this.Set(`[${collectionName}][ResponseMin]`,summary.run.timings.responseMin)
+        this.Set(`[${collectionName}][ResponseMax]`,summary.run.timings.responseMax)
+        this.Set(`[${collectionName}][DnsAverage]`,summary.run.timings.dnsAverage)
+        this.Set(`[${collectionName}][items][total]`,summary.run.stats.items.total)
+        this.Set(`[${collectionName}][items][failed]`,summary.run.stats.items.failed)
+        this.Set(`[${collectionName}][RequestsTotal]`,summary.run.stats.requests.total)
+        this.Set(`[${collectionName}][RequestsFailed]`,summary.run.stats.requests.failed)
+        this.Set(`[${collectionName}][TestsTotal]`,summary.run.stats.assertions.total)
+        this.Set(`[${collectionName}][TestsFailed]`,summary.run.stats.assertions.failed)
     }
     GetObjectID(objectName){
         console.log('GetMetricTag:', objectName);
