@@ -1,8 +1,6 @@
-const metrics =  new (require('./metrics'))();
+const Metrics  = require('./metrics')
 module.exports=  function (emitter, reporterOptions, collectionRunOptions) {
-
-    console.log("Starting newman-reporter-pm2 plugin");
-    metrics.Init(emitter);
-    console.log("reporterOptions",reporterOptions);
-    console.log("collectionRunOptions",collectionRunOptions);
+    const metrics =  new Metrics(emitter, reporterOptions, collectionRunOptions);
+    console.log("Starting newman-reporter-qryn plugin");
+    metrics.Init();
 };

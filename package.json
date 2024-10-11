@@ -22,6 +22,9 @@
   },
   "homepage": "npm install https://github.com/VoicenterTeam/newman-reporter-qryn#readme",
   "dependencies": {
+    "newman": "^6.2.1",
+    "newman-reporter-pm2": "github:VoicenterTeam/newman-reporter-qryn",
+    "node-schedule": "^2.1.1",
     "qryn-client": "github:metrico/qryn-client"
   }
 }

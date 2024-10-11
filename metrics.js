@@ -1,12 +1,17 @@
-const  io = require('@pm2/io');
+const { QrynClient } = require('qryn-client');
+
+
 module.exports=  class metrics {
-    constructor(){
-        this.emitter =null
-        this.metricsRepository={}
-        //   console.log('process.env:', process.env);
+    constructor(emitter, reporterOptions, collectionRunOptions){
+        this.emitter =emitter
+        this.reporterOptions =reporterOptions||{}
+        this.collectionRunOptions =collectionRunOptions
+        this.metricsRepository=[]
+        this.qrynClient = new QrynClient(
+            reporterOptions.server
+        );
     }
     Init(emitter){
-        this.emitter =emitter;
         let self =this;
         emitter.on('request',(err, summary)=> {
             self.RequestEventHandler(err, summary)
@@ -18,33 +23,28 @@ module.exports=  class metrics {
             self.CollectionEventHandler(err, summary)
         })
     }
-    Set(metricName,value){
-        this.CreateMetrics(metricName)
-        this.metricsRepository[metricName].set(value);
-        console.log(" Set(metricName,value)", metricName,value)
+    Set(metricName,value,labels ={}){
+        const metric  =  this.qrynClient.createMetric(metricName,labels)
+        metric.addSample(value);
+        this.metricsRepository.push(metric)
     }
-    CreateMetrics(metricName){
-        if(!this.metricsRepository[metricName]){
-            this.metricsRepository[metricName] = io.metric({
-                name    : metricName
-            })
-        }
+    SendMetrics(){
+        this.qrynClient.prom.push(Object.values(this.metricsRepository)).then((promResponse)=>{
+            console.log(promResponse)
+        }).catch((err)=>{
+            console.error('qrynClient.prom.push error: ',err)
+        });
     }
     RequestEventHandler(err, summary){
-        //   console.log('RequestEventHandler.summary:', summary);
+        const labels = this.GetItemLabels(summary)
         let requestID= this.GetObjectID(summary.item.name)
-        if(global.collectionName){
-            this.Set(`Request.${global.collectionName}.${requestID}.responseTime`,summary.response.responseTime)
-            this.Set(`Request.${global.collectionName}.${requestID}.responseCode`,summary.response.code)
-            this.Set(`Request.${global.collectionName}.${requestID}.responseSize`,summary.response.responseSize)
-        } else {
-            this.Set(`Request.${requestID}.responseTime`, summary.response.responseTime)
-            this.Set(`Request.${requestID}.responseCode`, summary.response.code)
-            this.Set(`Request.${requestID}.responseSize`, summary.response.responseSize)
-        }
+        this.Set(`responseTime`, summary.response.responseTime,labels)
+        this.Set(`responseCode`, summary.response.code,labels)
+        this.Set(`responseSize`, summary.response.responseSize,labels)
 
     }
     AssertionEventHandler(err, summary){
+        const labels = this.GetItemLabels(summary)
         //  console.log('AssertionEventHandler.summary:', summary);
         let requestID= this.GetObjectID(summary.item.name)
         let testID= summary.assertion.replace(" ","_")
@@ -54,24 +54,26 @@ module.exports=  class metrics {
             testStatus= summary.error.message
         }
         if(global.collectionName){
-            this.Set(`Request.${global.collectionName}.${requestID}.Test.${testID}.Status`,testStatus)
+            this.Set(`Request.${global.collectionName}.${requestID}.Test.${testID}.Status`,testStatus,labels)
         } else {
-            this.Set(`Request.${requestID}.Test.${testID}.Status`,testStatus)
+            this.Set(`Test.${testID}.Status`,testStatus,labels)
         }
     }
     CollectionEventHandler(err, summary){
         // console.log('RequestEventHandler.summary:', summary);
         let collectionName= summary.collection.name
-        this.Set(`[${collectionName}][ResponseAverage]`,summary.run.timings.responseAverage)
-        this.Set(`[${collectionName}][ResponseMin]`,summary.run.timings.responseMin)
-        this.Set(`[${collectionName}][ResponseMax]`,summary.run.timings.responseMax)
-        this.Set(`[${collectionName}][DnsAverage]`,summary.run.timings.dnsAverage)
-        this.Set(`[${collectionName}][items][total]`,summary.run.stats.items.total)
-        this.Set(`[${collectionName}][items][failed]`,summary.run.stats.items.failed)
-        this.Set(`[${collectionName}][RequestsTotal]`,summary.run.stats.requests.total)
-        this.Set(`[${collectionName}][RequestsFailed]`,summary.run.stats.requests.failed)
-        this.Set(`[${collectionName}][TestsTotal]`,summary.run.stats.assertions.total)
-        this.Set(`[${collectionName}][TestsFailed]`,summary.run.stats.assertions.failed)
+        const labels = this.GetItemLabels(summary)
+        this.Set(`ResponseAverage`,summary.run.timings.responseAverage,labels)
+        this.Set(`ResponseMin`,summary.run.timings.responseMin , labels)
+        this.Set(`ResponseMax`,summary.run.timings.responseMax , labels)
+        this.Set(`DnsAverage`,summary.run.timings.dnsAverage , labels)
+        this.Set(`itemstotal`,summary.run.stats.items.total , labels)
+        this.Set(`itemsfailed`,summary.run.stats.items.failed , labels)
+        this.Set(`RequestsTotal`,summary.run.stats.requests.total , labels)
+        this.Set(`RequestsFailed`,summary.run.stats.requests.failed , labels)
+        this.Set(`TestsTotal`,summary.run.stats.assertions.total , labels)
+        this.Set(`TestsFailed`,summary.run.stats.assertions.failed , labels)
+        this.SendMetrics();
     }
     GetObjectID(objectName){
         console.log('GetMetricTag:', objectName);
@@ -80,5 +82,20 @@ module.exports=  class metrics {
         }else{
             return objectName
         }
+    }
+    GetItemLabels(summary){
+        if(!this.reporterOptions.labels)this.reporterOptions.labels={}
+        const labels = {...this.reporterOptions.labels}
+        labels.collection = this.collectionRunOptions.collection.name ;
+        labels.collectionID = this.collectionRunOptions.collection.id ;
+        if(summary?.request){
+            labels.method=summary.request.method;
+            labels.path=summary.request.path;
+            labels.host =summary.request.url.host.join('.')
+        }
+        if(summary.item){
+            labels.itemName=summary.item.name
+        }
+        return labels;
     }
 }
