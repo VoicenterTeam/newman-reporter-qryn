@@ -5,12 +5,12 @@ how to use custom-reporters:
 
 https://learning.postman.com/docs/running-collections/using-newman-cli/command-line-integration-with-newman/#using-custom-reporters
 
-npm install https://github.com/voicenter/newman-reporter-pm2
+npm install https://github.com/VoicenterTeam/newman-reporter-qryn
 
 and add the following index.js file into your project 
 
 
-`
+```javascript
       
     const newman = require('newman'),  
         schedule = require('node-schedule');  
@@ -24,13 +24,14 @@ and add the following index.js file into your project
     }  
     function runCollection() {  
         newman.run({  
-            collection: './test.postman_collection.json',  
-            reporters: ['cli','pm2'],  
+            collection: './HelloWorld.postman_collection.json',  
+            reporters: ['cli','qryn'],  
             reporter: {  
-                pm2: {  
+                qryn: {  
                     'option-name': 'option-value' // this is optional  
                 }  
             }  
         },finished );  
     }  
     //runCollection();
+```

@@ -8,22 +8,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/voicenter/newman-reporter-pm2.git"
+    "url": "git+https://github.com/VoicenterTeam/newman-reporter-qryn.git"
   },
   "keywords": [
     "newman-reporter",
     "newman",
-    "postman",
-    "pm2",
-    "prtg"
+    "qryn"
   ],
   "author": "Shlomi Gutman",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/voicenter/newman-reporter-pm2/issues"
+    "url": "https://github.com/VoicenterTeam/newman-reporter-qryn/issues"
   },
-  "homepage": "https://github.com/voicenter/newman-reporter-pm2#readme",
+  "homepage": "npm install https://github.com/VoicenterTeam/newman-reporter-qryn#readme",
   "dependencies": {
-    "@pm2/io": "^4.3.5"
+    "qryn-client": "github:metrico/qryn-client"
   }
 }
