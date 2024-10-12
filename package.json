@@ -1,5 +1,5 @@
 {
-  "name": "newman-reporter-pm2",
+  "name": "newman-reporter-qryn",
   "version": "1.0.0",
   "description": "newman-reporter that export result into pm2 metric",
   "main": "index.js",
