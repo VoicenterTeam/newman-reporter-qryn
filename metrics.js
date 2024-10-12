@@ -1,4 +1,5 @@
 const { QrynClient } = require('qryn-client');
+const { Readable } = require("node:stream");
 
 
 module.exports=  class metrics {
@@ -32,6 +33,10 @@ module.exports=  class metrics {
         })
     }
     LogEvent(eventType,label,value){
+        if( value.response?.stream  && value.response.stream.constructor.name === 'Buffer' ){
+            value.response.body =value.response.stream.toString()
+            delete  value.response.stream;
+        }
         label.eventType = eventType
         const stream = this.qrynClient.createStream(label);
         stream.addEntry(Date.now(), JSON.stringify(value));
@@ -75,11 +80,8 @@ module.exports=  class metrics {
     }
     AssertionEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
-
         labels.eventType = "AssertionSummary"
-        //  console.log('AssertionEventHandler.summary:', summary);
         labels.test = summary.assertion
-
         this.LogEvent(labels.eventType,labels,summary)
         this.LogError(labels.eventType,labels,err)
         let testStatus= 1
