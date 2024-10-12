@@ -80,6 +80,7 @@ module.exports=  class metrics {
         //  console.log('AssertionEventHandler.summary:', summary);
         labels.test = summary.assertion
 
+        this.LogEvent(labels.eventType,labels,summary)
         this.LogError(labels.eventType,labels,err)
         let testStatus= 1
         if(summary.error){
