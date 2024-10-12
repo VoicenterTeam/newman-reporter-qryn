@@ -12,6 +12,7 @@ module.exports=  class metrics {
         );
     }
     Init(){
+        let self = this;
         this.emitter.on('request',(err, summary)=> {
             self.RequestEventHandler(err, summary)
         })
