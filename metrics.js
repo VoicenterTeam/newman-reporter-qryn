@@ -32,6 +32,9 @@ module.exports=  class metrics {
         this.emitter.on('test',(err, summary)=> {
             self.TestEventHandler(err, summary)
         })
+        this.emitter.on('script',(err, summary)=> {
+            self.ScriptEventHandler(err, summary)
+        })
         this.emitter.on('console',(err, summary)=> {
             self.ConsoleEventHandler(err, summary)
         })
@@ -124,6 +127,19 @@ module.exports=  class metrics {
         }
         this.Set(`testStatus`,testStatus,labels)
     }
+    ScriptEventHandler(err, summary){
+        const labels = this.GetItemLabels(summary)
+        labels.eventType = "Script"
+        //  console.log('AssertionEventHandler.summary:', summary);
+        labels.test = summary.item.name
+        this.LogEvent(labels.eventType,labels,summary.item)
+        this.LogError(labels.eventType,labels,err)
+        let testStatus= 1
+        if(err){
+            testStatus= -1
+        }
+        this.Set(`testStatus`,testStatus,labels)
+    }
     CollectionEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
         labels.eventType = "CollectionSummary"
@@ -165,7 +181,7 @@ module.exports=  class metrics {
         }
         if(summary.error){
             labels.errorName=summary.error.name
-            labels.errorType=summary.error.type
+            labels.errorType=summary.error.type||summary.error.message
         }
         return labels;
     }
