@@ -7,6 +7,13 @@ module.exports=  class metrics {
         this.reporterOptions =reporterOptions||{}
         this.collectionRunOptions =collectionRunOptions
         this.metricsRepository=[]
+        if(reporterOptions.server.timeout &&reporterOptions.server.timeout.constructor.name==="String"){
+            try{
+                reporterOptions.server.timeout= Number.parseInt(reporterOptions.server.timeout)
+            }catch(e){
+                reporterOptions.server.timeout= 60000
+            }
+        }
         this.qrynClient = new QrynClient(
             reporterOptions.server
         );
