@@ -11,15 +11,14 @@ module.exports=  class metrics {
             reporterOptions.server
         );
     }
-    Init(emitter){
-        let self =this;
-        emitter.on('request',(err, summary)=> {
+    Init(){
+        this.emitter.on('request',(err, summary)=> {
             self.RequestEventHandler(err, summary)
         })
-        emitter.on('assertion',(err, summary)=> {
+        this.emitter.on('assertion',(err, summary)=> {
             self.AssertionEventHandler(err, summary)
         })
-        emitter.on('done',(err, summary)=> {
+        this.emitter.on('done',(err, summary)=> {
             self.CollectionEventHandler(err, summary)
         })
     }
