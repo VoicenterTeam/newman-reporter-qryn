@@ -7,6 +7,7 @@ module.exports=  class metrics {
         this.reporterOptions =reporterOptions||{}
         this.collectionRunOptions =collectionRunOptions
         this.metricsRepository=[]
+        this.logRepository = []
         if(reporterOptions.server.timeout &&reporterOptions.server.timeout.constructor.name==="String"){
             try{
                 reporterOptions.server.timeout= Number.parseInt(reporterOptions.server.timeout)
@@ -30,6 +31,19 @@ module.exports=  class metrics {
             self.CollectionEventHandler(err, summary)
         })
     }
+    LogEvent(eventType,label,value){
+        label.eventType = eventType
+        const stream = this.qrynClient.createStream(label);
+        stream.addEntry(Date.now(), JSON.stringify(value));
+        this.logRepository.push(stream)
+    }
+    LogError(eventType,label,error){
+        if(!error)return;
+        label.eventType = eventType + 'Error'
+        const stream = this.qrynClient.createStream(label);
+        stream.addEntry(Date.now(), JSON.stringify(error));
+        this.logRepository.push(stream)
+    }
     Set(metricName,value,labels ={}){
         const metric  =  this.qrynClient.createMetric({name:metricName,labels})
         metric.addSample(value);
@@ -42,9 +56,18 @@ module.exports=  class metrics {
             console.error('qrynClient.prom.push error: ',err)
         });
     }
+    SendLogs(){
+        this.qrynClient.loki.push(Object.values(this.logRepository)).then((lokiResponse)=>{
+            console.log(lokiResponse)
+        }).catch((err)=>{
+            console.error('qrynClient.loki.push error: ',err)
+        });
+    }
     RequestEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
         labels.eventType = "RequestSummary"
+        this.LogEvent(labels.eventType,labels,summary)
+        this.LogError(labels.eventType,labels,err)
         this.Set(`responseTime`, summary.response.responseTime,labels)
         this.Set(`responseCode`, summary.response.code,labels)
         this.Set(`responseSize`, summary.response.responseSize,labels)
@@ -56,6 +79,8 @@ module.exports=  class metrics {
         labels.eventType = "AssertionSummary"
         //  console.log('AssertionEventHandler.summary:', summary);
         labels.test = summary.assertion
+
+        this.LogError(labels.eventType,labels,err)
         let testStatus= 1
         if(summary.error){
             testStatus= -1
@@ -66,6 +91,8 @@ module.exports=  class metrics {
     CollectionEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
         labels.eventType = "CollectionSummary"
+        this.LogEvent(labels.eventType,labels,summary)
+        this.LogError(labels.eventType,labels,err)
         this.Set(`ResponseAverage`,summary.run.timings.responseAverage,labels)
         this.Set(`ResponseMin`,summary.run.timings.responseMin , labels)
         this.Set(`ResponseMax`,summary.run.timings.responseMax , labels)
@@ -76,7 +103,8 @@ module.exports=  class metrics {
         this.Set(`RequestsFailed`,summary.run.stats.requests.failed , labels)
         this.Set(`TestsTotal`,summary.run.stats.assertions.total , labels)
         this.Set(`TestsFailed`,summary.run.stats.assertions.failed , labels)
-        this.SendMetrics();
+        this.SendMetrics()
+        this.SendLogs()
     }
     GetObjectID(objectName){
         console.log('GetMetricTag:', objectName);
