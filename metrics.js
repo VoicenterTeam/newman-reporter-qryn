@@ -18,24 +18,24 @@ module.exports=  class metrics {
             reporterOptions.server
         );
     }
-    Init(emitter){
+    Init(){
         let self = this;
-        emitter.on('request',(err, summary)=> {
+        this.emitter.on('request',(err, summary)=> {
             self.RequestEventHandler(err, summary)
         })
-        emitter.on('assertion',(err, summary)=> {
+        this.emitter.on('assertion',(err, summary)=> {
             self.AssertionEventHandler(err, summary)
         })
-        emitter.on('done',(err, summary)=> {
+        this.emitter.on('done',(err, summary)=> {
             self.CollectionEventHandler(err, summary)
         })
-        emitter.on('test',(err, summary)=> {
+        this.emitter.on('test',(err, summary)=> {
             self.TestEventHandler(err, summary)
         })
-        emitter.on('console',(err, summary)=> {
+        this.emitter.on('console',(err, summary)=> {
             self.ConsoleEventHandler(err, summary)
         })
-        emitter.on('exception',(err, summary)=> {
+        this.emitter.on('exception',(err, summary)=> {
             self.ExceptionEventHandler(err, summary)
         })
     }
