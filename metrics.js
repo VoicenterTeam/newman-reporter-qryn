@@ -1,7 +1,5 @@
 const { QrynClient } = require('qryn-client');
-const { Readable } = require("node:stream");
-
-
+const stringify = require('json-stringify-safe');
 module.exports=  class metrics {
     constructor(emitter, reporterOptions, collectionRunOptions){
         this.emitter =emitter
@@ -20,16 +18,25 @@ module.exports=  class metrics {
             reporterOptions.server
         );
     }
-    Init(){
+    Init(emitter){
         let self = this;
-        this.emitter.on('request',(err, summary)=> {
+        emitter.on('request',(err, summary)=> {
             self.RequestEventHandler(err, summary)
         })
-        this.emitter.on('assertion',(err, summary)=> {
+        emitter.on('assertion',(err, summary)=> {
             self.AssertionEventHandler(err, summary)
         })
-        this.emitter.on('done',(err, summary)=> {
+        emitter.on('done',(err, summary)=> {
             self.CollectionEventHandler(err, summary)
+        })
+        emitter.on('test',(err, summary)=> {
+            self.TestEventHandler(err, summary)
+        })
+        emitter.on('console',(err, summary)=> {
+            self.ConsoleEventHandler(err, summary)
+        })
+        emitter.on('exception',(err, summary)=> {
+            self.ExceptionEventHandler(err, summary)
         })
     }
     LogEvent(eventType,label,value){
@@ -39,14 +46,14 @@ module.exports=  class metrics {
         }
         label.eventType = eventType
         const stream = this.qrynClient.createStream(label);
-        stream.addEntry(Date.now(), JSON.stringify(value));
+        stream.addEntry(Date.now(), stringify(value, null,2));
         this.logRepository.push(stream)
     }
     LogError(eventType,label,error){
         if(!error)return;
         label.eventType = eventType + 'Error'
         const stream = this.qrynClient.createStream(label);
-        stream.addEntry(Date.now(), JSON.stringify(error));
+        stream.addEntry(Date.now(), stringify(error,null,2));
         this.logRepository.push(stream)
     }
     Set(metricName,value,labels ={}){
@@ -73,14 +80,15 @@ module.exports=  class metrics {
         labels.eventType = "RequestSummary"
         this.LogEvent(labels.eventType,labels,summary)
         this.LogError(labels.eventType,labels,err)
-        this.Set(`responseTime`, summary.response.responseTime,labels)
-        this.Set(`responseCode`, summary.response.code,labels)
-        this.Set(`responseSize`, summary.response.responseSize,labels)
+        if(summary.response?.responseTime)this.Set(`responseTime`, summary.response.responseTime,labels)
+        if(summary.response?.code)this.Set(`responseCode`, summary.response.code,labels)
+        if(summary.response?.responseSize)this.Set(`responseSize`, summary.response.responseSize,labels)
 
     }
     AssertionEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
         labels.eventType = "AssertionSummary"
+        //  console.log('AssertionEventHandler.summary:', summary);
         labels.test = summary.assertion
         this.LogEvent(labels.eventType,labels,summary)
         this.LogError(labels.eventType,labels,err)
@@ -88,8 +96,33 @@ module.exports=  class metrics {
         if(summary.error){
             testStatus= -1
         }
-        this.Set(`TestStatus`,testStatus,labels)
-
+        this.Set(`assertionStatus`,testStatus,labels)
+    }
+    ExceptionEventHandler(err, summary){
+        const labels = this.GetItemLabels(summary)
+        labels.eventType = "Exception"
+        this.LogEvent(labels.eventType,labels,summary.error)
+        this.Set(`Exception`,1,labels)
+    }
+    ConsoleEventHandler(err, summary){
+        const labels = this.GetItemLabels(summary)
+        labels.eventType = "Console"
+        labels.level = summary.level
+        this.LogEvent(labels.eventType,labels,summary.messages.join(", "))
+        this.Set(`Exception`,1,labels)
+    }
+    TestEventHandler(err, summary){
+        const labels = this.GetItemLabels(summary)
+        labels.eventType = "Test"
+        //  console.log('AssertionEventHandler.summary:', summary);
+        labels.test = summary.item.name
+        this.LogEvent(labels.eventType,labels,summary.executions)
+        this.LogError(labels.eventType,labels,err)
+        let testStatus= 1
+        if(err){
+            testStatus= -1
+        }
+        this.Set(`testStatus`,testStatus,labels)
     }
     CollectionEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
@@ -129,6 +162,10 @@ module.exports=  class metrics {
         }
         if(summary.item){
             labels.itemName=summary.item.name
+        }
+        if(summary.error){
+            labels.errorName=summary.error.name
+            labels.errorType=summary.error.type
         }
         return labels;
     }
