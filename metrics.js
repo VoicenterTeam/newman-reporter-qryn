@@ -44,7 +44,7 @@ module.exports=  class metrics {
     }
     RequestEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
-        let requestID= this.GetObjectID(summary.item.name)
+        labels.eventType = "RequestSummary"
         this.Set(`responseTime`, summary.response.responseTime,labels)
         this.Set(`responseCode`, summary.response.code,labels)
         this.Set(`responseSize`, summary.response.responseSize,labels)
@@ -52,24 +52,20 @@ module.exports=  class metrics {
     }
     AssertionEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
-        //  console.log('AssertionEventHandler.summary:', summary);
-        let requestID= this.GetObjectID(summary.item.name)
-        let testID= summary.assertion.replace(" ","_")
 
-        let testStatus= "OK"
+        labels.eventType = "AssertionSummary"
+        //  console.log('AssertionEventHandler.summary:', summary);
+        labels.test = summary.assertion
+        let testStatus= 1
         if(summary.error){
-            testStatus= summary.error.message
+            testStatus= -1
         }
-        if(global.collectionName){
-            this.Set(`Request.${global.collectionName}.${requestID}.Test.${testID}.Status`,testStatus,labels)
-        } else {
-            this.Set(`Test.${testID}.Status`,testStatus,labels)
-        }
+        this.Set(`TestStatus`,testStatus,labels)
+
     }
     CollectionEventHandler(err, summary){
-        // console.log('RequestEventHandler.summary:', summary);
-        let collectionName= summary.collection.name
         const labels = this.GetItemLabels(summary)
+        labels.eventType = "CollectionSummary"
         this.Set(`ResponseAverage`,summary.run.timings.responseAverage,labels)
         this.Set(`ResponseMin`,summary.run.timings.responseMin , labels)
         this.Set(`ResponseMax`,summary.run.timings.responseMax , labels)
@@ -97,7 +93,7 @@ module.exports=  class metrics {
         labels.collectionID = this.collectionRunOptions.collection.id ;
         if(summary?.request){
             labels.method=summary.request.method;
-            labels.path=summary.request.path;
+            labels.path=summary.request.url.path.join('/');
             labels.host =summary.request.url.host.join('.')
         }
         if(summary.item){
