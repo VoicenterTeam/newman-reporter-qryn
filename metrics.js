@@ -24,7 +24,7 @@ module.exports=  class metrics {
         })
     }
     Set(metricName,value,labels ={}){
-        const metric  =  this.qrynClient.createMetric(metricName,labels)
+        const metric  =  this.qrynClient.createMetric({name:metricName,labels})
         metric.addSample(value);
         this.metricsRepository.push(metric)
     }
