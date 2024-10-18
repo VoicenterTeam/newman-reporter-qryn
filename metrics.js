@@ -43,13 +43,28 @@ module.exports=  class metrics {
         })
     }
     LogEvent(eventType,label,value){
-        if( value.response?.stream  && value.response.stream.constructor.name === 'Buffer' ){
-            value.response.body =value.response.stream.toString()
-            delete  value.response.stream;
+        let summary
+        if(eventType === 'RequestSummary' || eventType === 'RequestSummaryF' ){
+            summary = {}
+            if( value.response?.stream  && value.response.stream.constructor.name === 'Buffer' ){
+                value.response.body =value.response.stream.toString()
+                //      delete  value.response.stream;
+            }
+            summary.response = {...value.response}
+            delete summary.response.stream
+            if(!this.collectionRunOptions.logResponse){
+                delete summary.response.body
+                delete summary.response.headers
+            }
+            summary.request ={...value.request}
+            if(!this.collectionRunOptions.logRequest){
+                delete summary.request.headers
+                delete summary.request.body
+            }
         }
         label.eventType = eventType
         const stream = this.qrynClient.createStream(label);
-        stream.addEntry(Date.now(), stringify(value, null,2));
+        stream.addEntry(Date.now(), stringify(summary||value, null,2));
         this.logRepository.push(stream)
     }
     LogError(eventType,label,error){
@@ -66,14 +81,14 @@ module.exports=  class metrics {
     }
     SendMetrics(){
         this.qrynClient.prom.push(Object.values(this.metricsRepository)).then((promResponse)=>{
-            console.log(promResponse)
+        //    console.log(promResponse)
         }).catch((err)=>{
             console.error('qrynClient.prom.push error: ',err)
         });
     }
     SendLogs(){
         this.qrynClient.loki.push(Object.values(this.logRepository)).then((lokiResponse)=>{
-            console.log(lokiResponse)
+           // console.log(lokiResponse)
         }).catch((err)=>{
             console.error('qrynClient.loki.push error: ',err)
         });
@@ -83,9 +98,9 @@ module.exports=  class metrics {
         labels.eventType = "RequestSummary"
         this.LogEvent(labels.eventType,labels,summary)
         this.LogError(labels.eventType,labels,err)
-        if(summary.response?.responseTime)this.Set(`responseTime`, summary.response.responseTime,labels)
-        if(summary.response?.code)this.Set(`responseCode`, summary.response.code,labels)
-        if(summary.response?.responseSize)this.Set(`responseSize`, summary.response.responseSize,labels)
+        if(summary.response?.responseTime)this.Set(`ResponseTime`, summary.response.responseTime,labels)
+        if(summary.response?.code)this.Set(`ResponseCode`, summary.response.code,labels)
+        if(summary.response?.responseSize)this.Set(`ResponseSize`, summary.response.responseSize,labels)
 
     }
     AssertionEventHandler(err, summary){
@@ -99,7 +114,7 @@ module.exports=  class metrics {
         if(summary.error){
             testStatus= -1
         }
-        this.Set(`assertionStatus`,testStatus,labels)
+        this.Set(`AssertionStatus`,testStatus,labels)
     }
     ExceptionEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
@@ -138,7 +153,7 @@ module.exports=  class metrics {
         if(err){
             testStatus= -1
         }
-        this.Set(`testStatus`,testStatus,labels)
+        this.Set(`TestStatus`,testStatus,labels)
     }
     CollectionEventHandler(err, summary){
         const labels = this.GetItemLabels(summary)
@@ -149,8 +164,8 @@ module.exports=  class metrics {
         this.Set(`ResponseMin`,summary.run.timings.responseMin , labels)
         this.Set(`ResponseMax`,summary.run.timings.responseMax , labels)
         this.Set(`DnsAverage`,summary.run.timings.dnsAverage , labels)
-        this.Set(`itemstotal`,summary.run.stats.items.total , labels)
-        this.Set(`itemsfailed`,summary.run.stats.items.failed , labels)
+        this.Set(`Itemstotal`,summary.run.stats.items.total , labels)
+        this.Set(`Itemsfailed`,summary.run.stats.items.failed , labels)
         this.Set(`RequestsTotal`,summary.run.stats.requests.total , labels)
         this.Set(`RequestsFailed`,summary.run.stats.requests.failed , labels)
         this.Set(`TestsTotal`,summary.run.stats.assertions.total , labels)
